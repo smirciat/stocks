@@ -15,13 +15,16 @@ angular.module('workspaceApp')
     $scope.labels=[];
     $scope.options={bezierCurve : false,
                     pointHitDetectionRadius : 0,
-                    datasetFill : false
+                    datasetFill : false, 
+                    responsive: true,
+                    showScale: false
     };
     $scope.series=[];
     $http.get('/api/things').success(function(awesomeThings) {
       $scope.awesomeThings = awesomeThings;
       socket.syncUpdates('thing', $scope.awesomeThings, function(event, item, array){
-        $scope.drawChart(array);
+        if (event==="created") $scope.addSeries(item);
+        else $scope.drawChart(array);
       });
       $scope.drawChart(awesomeThings);
     });
@@ -49,17 +52,10 @@ angular.module('workspaceApp')
         return callback(data.query.results.quote);
       });
     };
-    $scope.drawChart=function(tickers){
-      $scope.series=[];
-      $scope.data=[[]];
-      $scope.labels=[];
-      var promises=[];
-      tickers.forEach(function(ticker, index){
-        promises.push($scope.getQuotes(ticker.symbol, function(array){
+    $scope.setSeries=function(array, index){
           $scope.series.push(array[0].Symbol);
           var tempData=[];
           array.forEach(function(element){
-            //if ($scope.data.length===index) $scope.data.push([]);
             tempData.push(element.Close);
             if (index===0) $scope.labels.push($scope.dateFormat(element.Date));
           });
@@ -67,10 +63,29 @@ angular.module('workspaceApp')
           $scope.data.push(tempData);
           if ($scope.data[0].length===0) $scope.data.splice(0,1);
           if (index===0) $scope.labels.reverse();
+    };
+    $scope.addSeries = function(item){
+        $scope.getQuotes(item.symbol, function(array){
+          $scope.setSeries(array, $scope.series.length);
+        });
+    };
+    $scope.drawChart=function(tickers){
+      $scope.series=[];
+      $scope.data=[[]];
+      $scope.labels=[];
+      var promises=[];
+      tickers.forEach(function(ticker, index){
+        promises.push($scope.getQuotes(ticker.symbol, function(array){
+          $scope.setSeries(array, index);
         }));
       });
       $q.all(promises).then(function () {
         console.log('All Done!');
+        var tempSeries=[];
+        var tempData=[[]];
+        for (var i=0;i<$scope.series.length;i++){
+          //reorder data and series to match awesomeThings
+        }
       });
     };
     $scope.addThing = function() {

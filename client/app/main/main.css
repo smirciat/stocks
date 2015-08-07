@@ -38,3 +38,6 @@ canvas{
 .ch{
    width:90%; 
 }
+li {
+    display:inline !important;
+}
