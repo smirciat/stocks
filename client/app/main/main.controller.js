@@ -32,19 +32,23 @@ angular.module('workspaceApp')
     var dd = today.getDate();
     var mm = today.getMonth()+1; //January is 0!
     var om = mm-6;
-    if (om<1) om=1;
     var yyyy = today.getFullYear();
+    var oyyyy=yyyy;
+    if (om<1) {
+      om+=12;
+      oyyyy--;
+    }
     if(dd<10){
-        dd='0'+dd
-    } 
+        dd='0'+dd;
+    }
     if(mm<10){
-        mm='0'+mm
+        mm='0'+mm;
     } 
     if(om<10){
-        om='0'+om
+        om='0'+om;
     } 
     var date2 = yyyy + '-' + mm + '-' + dd;
-    var date1=yyyy + '-' + om + '-' + dd;
+    var date1 = oyyyy + '-' + om + '-' + dd;
     var baseUrl='https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.historicaldata%20where%20symbol%20%3D%20%22';
     var base2='%22%20and%20startDate%20%3D%20%22' + date1 + '%22%20and%20endDate%20%3D%20%22' + date2 + '%22&format=json&diagnostics=true&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys&callback=JSON_CALLBACK';
     $scope.getQuotes = function(symbol, callback){
@@ -53,15 +57,14 @@ angular.module('workspaceApp')
       });
     };
     $scope.setSeries=function(array, index){
-          $scope.series.push(array[0].Symbol);
+          if (index===$scope.series.length) $scope.series.push(array[0].Symbol);
           var tempData=[];
           array.forEach(function(element){
             tempData.push(element.Close);
             if (index===0) $scope.labels.push($scope.dateFormat(element.Date));
           });
           tempData.reverse();
-          $scope.data.push(tempData);
-          if ($scope.data[0].length===0) $scope.data.splice(0,1);
+          $scope.pushData.splice(index, 1, tempData);
           if (index===0) $scope.labels.reverse();
     };
     $scope.addSeries = function(item){
@@ -71,8 +74,13 @@ angular.module('workspaceApp')
     };
     $scope.drawChart=function(tickers){
       $scope.series=[];
-      $scope.data=[[]];
+      $scope.pushData=[[]];
       $scope.labels=[];
+      tickers.forEach(function(element, index){
+        $scope.series.push(element.symbol);
+        if (index>0) $scope.pushData.push([]);
+        $scope.labels.push([]);
+      });
       var promises=[];
       tickers.forEach(function(ticker, index){
         promises.push($scope.getQuotes(ticker.symbol, function(array){
@@ -81,11 +89,7 @@ angular.module('workspaceApp')
       });
       $q.all(promises).then(function () {
         console.log('All Done!');
-        var tempSeries=[];
-        var tempData=[[]];
-        for (var i=0;i<$scope.series.length;i++){
-          //reorder data and series to match awesomeThings
-        }
+        $scope.data=$scope.pushData;
       });
     };
     $scope.addThing = function() {
